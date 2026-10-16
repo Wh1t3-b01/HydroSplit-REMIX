@@ -1,0 +1,10 @@
+{
+  "name": "HydroSplit Pro",
+  "description": "Calcolo, ripartizione e rendicontazione contatori idrici condominiali con OCR intelligente bolletta e layout A4 fiscale.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

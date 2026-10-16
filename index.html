@@ -1,0 +1,1209 @@
+<!doctype html>
+<html lang="it" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>HydroSplit Pro — Ripartizione Idrica Condominiale</title>
+    <meta name="description" content="Calcolo, ripartizione e rendicontazione contatori idrici condominiali con OCR intelligente bolletta e layout A4 fiscale." />
+    <meta property="og:title" content="HydroSplit Pro — Ripartizione Contatori Idrici Condominiali" />
+    <meta property="og:description" content="Calcolo, ripartizione e rendicontazione contatori idrici condominiali con OCR intelligente bolletta e layout A4 fiscale." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#05070e" />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Play CDN for immediate standalone rendering -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              void: '#05070e',
+              surface: '#0a0e1a',
+              card: '#0e1424',
+              cyan: {
+                400: '#00f5d4',
+                500: '#06b6d4',
+                600: '#0891b2',
+                950: '#022c36',
+              },
+              indigo: {
+                500: '#6366f1',
+                600: '#4f46e5',
+                950: '#0e1238',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Client-side Tesseract.js OCR engine (100% in-browser fallback) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
+    <!-- Client-side PDF Engine for Native Mobile Sharing and High-Res A4 Rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body class="bg-[#05070e] text-slate-100 min-h-screen selection:bg-[#00f5d4] selection:text-black font-sans antialiased pb-28 md:pb-14">
+    
+    <!-- LIGHTWEIGHT LANDING MODAL (DISMISSED IN 1 TAP) -->
+    <div id="landing-overlay" class="landing-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="landing-backdrop absolute inset-0 bg-[#05070e]/90 backdrop-blur-xl"></div>
+      <div class="landing-card relative z-10 max-w-md w-full p-6 sm:p-8 rounded-3xl bg-[#0a0e1a]/95 border border-white/10 shadow-2xl shadow-cyan-500/10 text-center space-y-5">
+        
+        <!-- Glowing Holographic Brand Emblem -->
+        <div class="relative w-16 h-16 mx-auto">
+          <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-cyan-400 via-indigo-500 to-emerald-400 blur-lg opacity-40 animate-pulse"></div>
+          <div class="relative w-16 h-16 rounded-2xl bg-[#0e1424] border border-cyan-400/40 flex items-center justify-center text-3xl shadow-inner">
+            💧
+          </div>
+        </div>
+        
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-center gap-1.5">
+            <span class="text-xs font-mono font-bold tracking-widest uppercase text-cyan-400">ARERA FISCAL MATRIX</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            HydroSplit <span class="bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent">Pro</span>
+          </h1>
+          <p class="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-sm mx-auto">
+            Ripartizione contatori idrici condominiali di nuova generazione. Scansione neurale OCR bolletta, calcolo volumetrico e rendiconto A4 certificato.
+          </p>
+        </div>
+
+        <div class="pt-2 space-y-2.5">
+          <button id="btn-start" class="btn-primary w-full py-3.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2">
+            <span>Inizia Subito</span>
+            <span>⚡</span>
+          </button>
+          <button id="btn-load-demo-landing" class="btn-secondary w-full py-3 rounded-2xl text-xs font-semibold text-slate-300 flex items-center justify-center gap-1.5">
+            <span>🧪 Carica Dataset Dimostrativo</span>
+          </button>
+        </div>
+
+        <div class="pt-2 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+          <span>Ingegneria di calcolo a cura di</span>
+          <strong class="text-slate-300">Gennaro Turco</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="app-container" class="min-h-screen flex flex-col screen-only">
+      
+      <!-- FUTURISTIC SLIM TOP APP BAR -->
+      <header class="sticky top-0 z-30 bg-[#05070e]/85 backdrop-blur-2xl border-b border-white/[0.07] px-4 py-3">
+        <div class="max-w-3xl mx-auto flex items-center justify-between gap-3">
+          
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-indigo-600 p-[1px] shadow-sm shadow-cyan-500/20">
+              <div class="w-full h-full bg-[#05070e] rounded-[11px] flex items-center justify-center text-sm">
+                💧
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-extrabold text-sm sm:text-base tracking-tight text-white">HydroSplit</span>
+                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-mono font-bold bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">PRO</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Navigation Actions -->
+          <div class="flex items-center gap-2">
+            <button id="nav-btn-demo" class="px-2.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-cyan-400/40 text-slate-300 hover:text-cyan-400 text-xs font-medium transition-all" title="Carica dati di prova">
+              🧪 Demo
+            </button>
+            <button id="nav-btn-report-preview" class="btn-primary px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5" title="Crea e scarica PDF Report">
+              <span>📄 Crea PDF Report</span>
+            </button>
+            <button id="nav-btn-reset" class="p-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all" title="Azzera tutto">
+              🗑️
+            </button>
+          </div>
+
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT -->
+      <main class="flex-1 max-w-3xl w-full mx-auto p-3.5 sm:p-5 space-y-4">
+        
+        <!-- HOLOGRAPHIC COCKPIT HUD (SUMMARY STRIP) -->
+        <section class="glass-card p-4 rounded-2xl border border-white/[0.1] bg-[#0a0e1a]/80 shadow-xl space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
+            <div>
+              <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 block">
+                TOTALE FATTURA DA RIPARTIRE (MASTER)
+              </span>
+              <div id="disp-totale-bolletta" class="text-2xl sm:text-3xl font-mono font-black text-white text-glow-cyan">
+                € 0,00
+              </div>
+            </div>
+
+            <!-- Live Status Beacon -->
+            <div class="flex items-center gap-2">
+              <div id="reconciliation-pill" class="hud-pill hud-pill-emerald">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="reconciliation-text">Quadratura 0,00 €</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Micro Telemetry Gauges -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+            <div class="p-2 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between">
+              <span class="text-[11px] text-slate-400">Volume Totale</span>
+              <span id="badge-total-volume" class="font-mono font-bold text-cyan-300">0 m³</span>
+            </div>
+            <div class="p-2 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between">
+              <span class="text-[11px] text-slate-400">Unità Condòmini</span>
+              <span id="badge-active-units" class="font-mono font-bold text-slate-200">3 Attive</span>
+            </div>
+            <div class="hidden sm:flex p-2 rounded-xl bg-white/[0.02] border border-white/[0.05] items-center justify-between col-span-1">
+              <span class="text-[11px] text-slate-400">Filtro ARERA</span>
+              <span class="font-mono font-bold text-indigo-300">IVA 10% Fiscal</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- STEP 1: CONDOMINIO & PERIODO (ACCORDION) -->
+        <section class="glass-card rounded-2xl border border-white/[0.08] bg-[#0a0e1a]/60 overflow-hidden">
+          <div id="condo-header-toggle" class="p-3.5 flex items-center justify-between cursor-pointer hover:bg-white/[0.02] transition-colors">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-8 h-8 rounded-xl bg-cyan-950/80 border border-cyan-800/40 text-cyan-400 flex items-center justify-center text-sm flex-shrink-0">
+                🏢
+              </span>
+              <div class="min-w-0">
+                <h2 id="condo-badge-name" class="text-xs sm:text-sm font-bold text-white truncate">Condominio Belvedere, Scala A</h2>
+                <p id="condo-badge-period" class="text-[11px] text-slate-400 truncate">1° Trimestre 2026 (01/01 - 31/03)</p>
+              </div>
+            </div>
+            <button type="button" class="text-xs text-cyan-400 font-semibold px-2.5 py-1 rounded-xl bg-cyan-950/50 border border-cyan-800/40 flex-shrink-0 hover:bg-cyan-900/60 transition-colors">
+              Modifica Dati ✏️
+            </button>
+          </div>
+
+          <!-- Hidden inputs by default on mobile, expands on click -->
+          <div id="condo-fields-container" class="hidden p-4 pt-1 border-t border-white/[0.06] space-y-3 bg-[#05070e]/60">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label for="meta_condominio" class="text-[11px] font-semibold text-slate-400">Nome Condominio / Scala</label>
+                <input type="text" id="meta_condominio" class="input-field py-2 text-xs" value="Condominio Belvedere, Scala A" />
+              </div>
+              <div class="space-y-1">
+                <label for="meta_periodo" class="text-[11px] font-semibold text-slate-400">Periodo di Fatturazione</label>
+                <input type="text" id="meta_periodo" class="input-field py-2 text-xs" value="1° Trimestre 2026 (01/01 - 31/03)" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label for="meta_fattura" class="text-[11px] font-semibold text-slate-400">N° Fattura Ente Idrico</label>
+                <input type="text" id="meta_fattura" class="input-field py-2 text-xs" value="FAT-2026/0894 - Acquedotto SpA" />
+              </div>
+              <div class="space-y-1">
+                <label for="meta_amministratore" class="text-[11px] font-semibold text-slate-400">Redattore / Referente</label>
+                <input type="text" id="meta_amministratore" class="input-field py-2 text-xs" value="Gennaro Turco (Ref. Tecnico)" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- STEP 2: IMPORTI BOLLETTA CON OCR NEURALE -->
+        <section class="glass-card p-4 sm:p-5 rounded-2xl border border-white/[0.08] bg-[#0a0e1a]/70 space-y-4">
+          
+          <!-- CYBERNETIC OCR SCANNER ZONE -->
+          <div class="ocr-scanner-zone p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3 text-center sm:text-left">
+              <div class="w-10 h-10 rounded-xl bg-cyan-950/80 border border-cyan-400/30 flex items-center justify-center text-xl shadow-lg shadow-cyan-500/10 flex-shrink-0">
+                📷
+              </div>
+              <div>
+                <div class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 justify-center sm:justify-start">
+                  <span>Scansione Bolletta con Visione AI</span>
+                  <span class="px-1.5 py-0.2 rounded text-[9px] font-mono bg-cyan-400/20 text-cyan-300 border border-cyan-400/40">ULTRA FAST</span>
+                </div>
+                <div class="text-[11px] text-slate-400">Estrae all'istante quote fisse, canoni idrici, fognatura, depurazione e oneri</div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <input type="file" id="ocr-camera-input" accept="image/*" capture="environment" class="hidden" />
+              <input type="file" id="ocr-file-input" accept="image/*" class="hidden" />
+              
+              <button id="btn-trigger-camera" class="btn-primary w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/20">
+                <span>Scatta Foto 📷</span>
+              </button>
+              <button id="btn-trigger-upload" class="btn-secondary px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-200" title="Carica da galleria">
+                📁 File
+              </button>
+            </div>
+          </div>
+
+          <!-- OCR Progress Bar -->
+          <div id="ocr-progress-container" class="hidden p-3 rounded-xl bg-cyan-950/40 border border-cyan-800/60 space-y-1.5">
+            <div class="flex items-center justify-between text-[11px] text-cyan-300">
+              <span id="ocr-progress-label">Analisi OCR in corso...</span>
+              <span id="ocr-progress-percent" class="font-mono font-bold">45%</span>
+            </div>
+            <div class="w-full h-1.5 rounded-full bg-slate-900 overflow-hidden">
+              <div id="ocr-progress-bar" class="h-full bg-gradient-to-r from-cyan-400 via-indigo-500 to-emerald-400 rounded-full transition-all duration-300 w-1/4"></div>
+            </div>
+          </div>
+
+          <!-- AI Autofill Confirmation & Inspection Notice Banner (Minimal with Micro-LED) -->
+          <div id="ocr-autofill-banner" class="hidden p-3 rounded-xl bg-[#090e1a]/95 border border-cyan-500/30 text-xs transition-all animate-fadeIn">
+            <div class="flex items-start gap-2.5">
+              <!-- Micro-LED Faro Incandescente (Pallino piccolo, luce forte verde acqua) -->
+              <div class="pt-1 flex items-center justify-center flex-shrink-0" title="Avviso di attenzione attiva">
+                <span class="beacon-micro-led"></span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-white text-xs">Campi inseriti automaticamente dall'AI</span>
+                  <span class="text-[10px] font-mono text-cyan-400 font-semibold">• Verifica dati</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                  Controlla i valori estratti dalla bolletta prima di procedere con la ripartizione.
+                </p>
+              </div>
+              <button type="button" id="btn-dismiss-ocr-banner" class="text-slate-400 hover:text-white p-0.5 rounded hover:bg-white/[0.08] transition-colors text-xs flex-shrink-0" title="Chiudi avviso">
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <!-- Corrispettivi Bolletta: Minimalist Hardware Grid -->
+          <div class="space-y-4">
+            
+            <!-- Group A: Spese Fisse -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                  1. Spese Fisse Contrattuali (Ripartite in Parti Uguali)
+                </span>
+                <span class="text-[10px] font-mono text-indigo-300 bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-900/60">PARITARIE</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2.5">
+                <div class="space-y-1">
+                  <label for="bill_quotaFissa" class="text-[11px] font-medium text-slate-400 block truncate">
+                    Quota Fissa Acquedotto
+                  </label>
+                  <div class="relative">
+                    <span class="currency-prefix">€</span>
+                    <input type="number" step="0.01" min="0" id="bill_quotaFissa" class="input-currency py-2 text-xs" placeholder="0.00" value="48.50" />
+                  </div>
+                </div>
+
+                <div class="space-y-1">
+                  <label for="bill_oneriPerequazioneAcqua" class="text-[11px] font-medium text-slate-400 block truncate">
+                    Oneri Perequazione Acqua
+                  </label>
+                  <div class="relative">
+                    <span class="currency-prefix">€</span>
+                    <input type="number" step="0.01" min="0" id="bill_oneriPerequazioneAcqua" class="input-currency py-2 text-xs" placeholder="0.00" value="4.20" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Accordion for other secondary fixed fees -->
+              <details class="group text-xs">
+                <summary class="cursor-pointer text-[11px] text-cyan-400 hover:text-cyan-300 py-1 font-medium list-none flex items-center gap-1">
+                  <span>＋ Altri oneri fissi (Fognatura, Depurazione, Spedizione)</span>
+                </summary>
+                <div class="grid grid-cols-2 gap-2.5 pt-2">
+                  <div class="space-y-1">
+                    <label for="bill_oneriPerequazioneFognatura" class="text-[11px] font-medium text-slate-400 block truncate">Oneri Fognatura</label>
+                    <div class="relative">
+                      <span class="currency-prefix">€</span>
+                      <input type="number" step="0.01" min="0" id="bill_oneriPerequazioneFognatura" class="input-currency py-2 text-xs" placeholder="0.00" value="1.80" />
+                    </div>
+                  </div>
+                  <div class="space-y-1">
+                    <label for="bill_oneriPerequazioneDepurazione" class="text-[11px] font-medium text-slate-400 block truncate">Oneri Depurazione</label>
+                    <div class="relative">
+                      <span class="currency-prefix">€</span>
+                      <input type="number" step="0.01" min="0" id="bill_oneriPerequazioneDepurazione" class="input-currency py-2 text-xs" placeholder="0.00" value="3.50" />
+                    </div>
+                  </div>
+                  <div class="space-y-1">
+                    <label for="bill_speseSpedizione" class="text-[11px] font-medium text-slate-400 block truncate">Spese Spedizione (Esente IVA)</label>
+                    <div class="relative">
+                      <span class="currency-prefix">€</span>
+                      <input type="number" step="0.01" min="0" id="bill_speseSpedizione" class="input-currency py-2 text-xs" placeholder="0.00" value="2.50" />
+                    </div>
+                  </div>
+                  <div class="space-y-1">
+                    <label for="bill_costoPagamento" class="text-[11px] font-medium text-slate-400 block truncate">Costo Bollettino (Esente IVA)</label>
+                    <div class="relative">
+                      <span class="currency-prefix">€</span>
+                      <input type="number" step="0.01" min="0" id="bill_costoPagamento" class="input-currency py-2 text-xs" placeholder="0.00" value="1.50" />
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            <!-- Group B: Spese Variabili / Consumi -->
+            <div class="space-y-2 pt-2 border-t border-white/[0.06]">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                  2. Spese Variabili (Ripartite sui m³ consumati)
+                </span>
+                <span class="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-900/60">PROPORZIONALI</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div class="space-y-1">
+                  <label for="bill_canoniIdrici" class="text-[11px] font-medium text-slate-400 block truncate">Canoni Idrici (Acqua)</label>
+                  <div class="relative">
+                    <span class="currency-prefix">€</span>
+                    <input type="number" step="0.01" min="0" id="bill_canoniIdrici" class="input-currency py-2 text-xs font-bold" placeholder="0.00" value="184.20" />
+                  </div>
+                </div>
+
+                <div class="space-y-1">
+                  <label for="bill_canoneFognatura" class="text-[11px] font-medium text-slate-400 block truncate">Canone Fognatura</label>
+                  <div class="relative">
+                    <span class="currency-prefix">€</span>
+                    <input type="number" step="0.01" min="0" id="bill_canoneFognatura" class="input-currency py-2 text-xs font-bold" placeholder="0.00" value="38.40" />
+                  </div>
+                </div>
+
+                <div class="space-y-1">
+                  <label for="bill_canoneDepurazione" class="text-[11px] font-medium text-slate-400 block truncate">Canone Depurazione</label>
+                  <div class="relative">
+                    <span class="currency-prefix">€</span>
+                    <input type="number" step="0.01" min="0" id="bill_canoneDepurazione" class="input-currency py-2 text-xs font-bold" placeholder="0.00" value="76.80" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- STEP 3: CONTATORI CONDÒMINI (SUB-METER HARDWARE MATRIX) -->
+        <section class="glass-card p-4 sm:p-5 rounded-2xl border border-white/[0.08] bg-[#0a0e1a]/70 space-y-3.5">
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-xl bg-cyan-950/80 border border-cyan-800/40 text-cyan-400 flex items-center justify-center text-sm flex-shrink-0">
+                ⏱️
+              </span>
+              <div>
+                <h2 class="text-xs sm:text-sm font-bold text-white">Letture Contatori Sub-Idrici</h2>
+                <p class="text-[10px] text-slate-400">Valori espressi in metri cubi (m³)</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btn-copy-readings" class="px-2.5 py-1.5 rounded-xl bg-white/[0.04] text-slate-300 hover:text-cyan-400 text-xs font-medium border border-white/[0.08] transition-colors" title="Imposta letture attuali come precedenti">
+                🔄 Rollover
+              </button>
+              <button id="btn-add-unit" class="btn-primary px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1">
+                <span>＋ Condomino</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Tenants List -->
+          <div id="tenants-container" class="space-y-2.5">
+            <!-- Dynamic rows will be injected by app.js -->
+          </div>
+
+        </section>
+
+        <!-- PRIMARY CALCULATION BUTTON -->
+        <div class="pt-1">
+          <button id="btn-calculate" class="btn-primary w-full py-4 rounded-2xl text-base font-extrabold flex items-center justify-center gap-2">
+            <span>⚡ Elabora Ripartizione Fiscale</span>
+          </button>
+        </div>
+
+        <!-- STEP 4: RISULTATO ESSENZIALE PER I CONDÒMINI -->
+        <section id="section-results" class="glass-card p-4 sm:p-5 rounded-2xl border border-white/[0.08] bg-[#0a0e1a]/70 space-y-4">
+          
+          <div class="flex items-center justify-between border-b border-white/[0.06] pb-3">
+            <div>
+              <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-1.5">
+                <span>📊 Quote Finali Dovute (Ripartizione Singola)</span>
+              </h2>
+              <p class="text-[11px] text-slate-400">Importo spettante ad ogni condomino con arrotondamento ai 10 centesimi</p>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] font-mono text-cyan-300 font-bold bg-cyan-950/60 px-2 py-0.5 rounded-lg border border-cyan-800/40">
+                L. 96/2017
+              </span>
+            </div>
+          </div>
+
+          <!-- STREAMLINED TENANT RESULTS CARDS -->
+          <div id="simple-results-container" class="space-y-2.5">
+            <!-- Rendered cleanly by app.js -->
+          </div>
+
+          <!-- INSTITUTIONAL DISCLAIMER: ARROTONDAMENTO MONETE (10 CENTESIMI) -->
+          <div class="p-3.5 sm:p-4 rounded-2xl bg-[#0e1424]/90 border border-cyan-500/25 shadow-lg space-y-2.5">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-cyan-950/80 border border-cyan-400/40 text-cyan-300 flex items-center justify-center text-xs flex-shrink-0">
+                🪙
+              </div>
+              <h4 class="text-xs font-bold text-white uppercase tracking-wider">
+                Avvertenza Riscossione & Arrotondamento ai 10 Centesimi
+              </h4>
+            </div>
+            
+            <p class="text-[11px] text-slate-300 leading-relaxed">
+              Ai sensi dell'<strong>art. 13-quater L. 96/2017</strong> (cessazione conio monete da 1 e 2 centesimi) e vista la ridotta reperibilità delle monete da 5 centesimi, le quote individuali sono <strong>arrotondate per eccesso ai 10 centesimi di Euro</strong> (es. <em>xxx,03 € ➔ xxx,10 €</em>) per consentire e facilitare i pagamenti in contanti o bonifico senza creare insoluti o resti indivisibili.
+            </p>
+
+            <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between text-xs font-mono">
+              <span class="text-slate-400">Accantonamento Fondo Cassa Condominiale:</span>
+              <strong id="disp-fondo-cassa-box" class="text-emerald-400 font-bold text-xs sm:text-sm text-glow-emerald">+€ 0,00</strong>
+            </div>
+          </div>
+
+          <!-- ACTION: DUAL BUTTONS SCARICA FILE PDF & CONDIVIDI DOCUMENTO -->
+          <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button id="btn-quick-download-pdf" class="btn-primary w-full py-3.5 sm:py-4 rounded-2xl text-sm sm:text-base font-black flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/25 border border-cyan-300/40 cursor-pointer transition-transform active:scale-[0.98]">
+              <span class="text-xl">📥</span>
+              <span>Scarica File PDF</span>
+              <span>💾</span>
+            </button>
+            <button id="btn-quick-share-pdf" class="w-full py-3.5 sm:py-4 rounded-2xl text-sm sm:text-base font-black flex items-center justify-center gap-2 shadow-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white border border-emerald-400/40 transition-all cursor-pointer active:scale-[0.98]">
+              <span class="text-xl">📲</span>
+              <span>Condividi Documento</span>
+              <span>💬</span>
+            </button>
+          </div>
+
+          <!-- COLLAPSIBLE TECHNICAL AUDIT SECTION -->
+          <details id="technical-audit-details" class="group border border-white/[0.08] rounded-2xl bg-[#05070e]/60 overflow-hidden">
+            <summary class="p-3.5 cursor-pointer list-none flex items-center justify-between font-semibold text-xs text-slate-300 hover:text-cyan-400 transition-colors">
+              <span class="flex items-center gap-2">
+                <span>🔬</span>
+                <span>Specifiche Matematiche, Formule & Tabella Analitica</span>
+              </span>
+              <span class="text-cyan-400 text-xs transition-transform group-open:rotate-180">▼</span>
+            </summary>
+
+            <div class="p-4 border-t border-white/[0.06] space-y-4 text-xs text-slate-300 bg-[#05070e]/90">
+              
+              <div class="space-y-2">
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider text-cyan-400">Ledger Fiscale</h4>
+                <div class="p-3.5 rounded-xl bg-[#0a0e1a] border border-white/[0.08] text-[11px] space-y-1.5 text-slate-400 font-mono">
+                  <div>• <strong>Quote Fisse:</strong> Imponibile (€ <span id="disp-audit-imponibile-fissi">0.00</span>) + IVA 10% (€ <span id="disp-audit-iva-fissi">0.00</span>) + Esenti (€ <span id="disp-audit-esenti">0.00</span>) = Totale € <span id="disp-audit-totale-fissi">0.00</span> / <span id="disp-audit-unita">3</span> = <strong>€ <span id="disp-audit-fissa-procapite">0.00</span> pro-capite</strong>.</div>
+                  <div>• <strong>Quote Variabili:</strong> Imponibile (€ <span id="disp-audit-imponibile-var">0.00</span>) + IVA 10% (€ <span id="disp-audit-iva-var">0.00</span>) = Totale € <span id="disp-audit-totale-var">0.00</span> ripartiti proporzionalmente sui <span id="disp-audit-volume-totale">0</span> m³ rilevati.</div>
+                  <div>• <strong>Costo Medio Volumetrico:</strong> ~<span id="disp-audit-costo-m3">0.00</span> €/m³ effettivo.</div>
+                </div>
+              </div>
+
+              <!-- Full Audit Table for analytical review -->
+              <div class="overflow-x-auto rounded-xl border border-white/[0.08]">
+                <table class="w-full text-left text-[11px] border-collapse">
+                  <thead>
+                    <tr class="bg-[#0e1424] text-slate-400 border-b border-white/[0.08] uppercase font-semibold">
+                      <th class="p-2.5">Condomino</th>
+                      <th class="p-2.5 text-right font-mono">Prec.</th>
+                      <th class="p-2.5 text-right font-mono">Att.</th>
+                      <th class="p-2.5 text-right font-mono text-cyan-300">m³</th>
+                      <th class="p-2.5 text-right font-mono">%</th>
+                      <th class="p-2.5 text-right font-mono">Q. Fissa</th>
+                      <th class="p-2.5 text-right font-mono">Q. Var.</th>
+                      <th class="p-2.5 text-right font-mono">Esatto</th>
+                      <th class="p-2.5 text-right font-mono text-cyan-300 font-bold">Arr. 10c</th>
+                    </tr>
+                  </thead>
+                  <tbody id="results-table-body" class="divide-y divide-white/[0.05] text-slate-300">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                  <tfoot id="results-table-foot" class="bg-[#0e1424] font-bold border-t border-white/[0.1] text-white">
+                    <!-- Populated dynamically -->
+                  </tfoot>
+                </table>
+              </div>
+
+            </div>
+          </details>
+
+        </section>
+
+      </main>
+
+      <!-- FIXED BOTTOM MOBILE QUICK BAR -->
+      <div class="fixed bottom-0 inset-x-0 z-40 bg-[#05070e]/90 backdrop-blur-2xl border-t border-white/[0.08] p-3 px-4 flex items-center justify-between gap-3 max-w-3xl mx-auto shadow-2xl">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-400"></div>
+          <div class="min-w-0">
+            <span class="text-[10px] text-slate-400 block truncate">Totale Master Bolletta</span>
+            <span id="bottom-bar-total" class="font-mono font-bold text-white text-xs sm:text-sm">€ 0,00</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btn-bottom-calc" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-bold">
+            ⚡ Calcola
+          </button>
+          <button id="btn-bottom-report" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md shadow-cyan-500/20">
+            <span>📥</span>
+            <span>Scarica File PDF</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- INSTITUTIONAL DOCUMENT CENTER & PDF EXPORT MODAL         -->
+    <!-- Clean, Institutional & Professional Hub                  -->
+    <!-- ======================================================== -->
+    <div id="report-modal" class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 opacity-0 pointer-events-none transition-all duration-300">
+      <div id="report-modal-backdrop" class="absolute inset-0 bg-[#05070e]/90 backdrop-blur-xl"></div>
+      
+      <div class="relative z-10 w-full max-w-3xl max-h-[92vh] flex flex-col rounded-3xl bg-[#0a0e1a] border border-white/10 shadow-2xl overflow-hidden">
+        
+        <!-- Institutional Header -->
+        <div class="p-4 border-b border-white/[0.08] flex items-center justify-between bg-[#05070e]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-cyan-950/80 border border-cyan-400/40 text-cyan-300 flex items-center justify-center text-xl flex-shrink-0 shadow-md">
+              🏛️
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm sm:text-base font-extrabold text-white">Centro Documentale & Reportistica A4</h3>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">UFFICIALE</span>
+              </div>
+              <p class="text-[11px] text-slate-400" id="modal-inst-meta">Condominio Belvedere • Periodo: 1° Trimestre 2026</p>
+            </div>
+          </div>
+
+          <button id="btn-modal-close" class="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/[0.06] transition-colors" title="Chiudi">
+            ✕
+          </button>
+        </div>
+
+        <!-- Institutional Hub Body -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-[#070b16]">
+          
+          <!-- Key Metrics Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div class="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+              <span class="text-[10px] uppercase font-bold text-slate-400 block">Fattura Gestore</span>
+              <strong id="modal-metric-bolletta" class="text-sm sm:text-base font-mono font-extrabold text-white">€ 0,00</strong>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-white/[0.02] border border-cyan-500/30 bg-cyan-950/20">
+              <span class="text-[10px] uppercase font-bold text-cyan-300 block">Riscossione (arr. 10c)</span>
+              <strong id="modal-metric-riscosso" class="text-sm sm:text-base font-mono font-extrabold text-cyan-300 text-glow-cyan">€ 0,00</strong>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-white/[0.02] border border-emerald-500/30 bg-emerald-950/20">
+              <span class="text-[10px] uppercase font-bold text-emerald-400 block">Fondo Cassa Generato</span>
+              <strong id="modal-metric-cassa" class="text-sm sm:text-base font-mono font-extrabold text-emerald-400">+€ 0,00</strong>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+              <span class="text-[10px] uppercase font-bold text-slate-400 block">Unità & Consumo</span>
+              <strong id="modal-metric-unita" class="text-sm sm:text-base font-mono font-extrabold text-indigo-300">3 U / 0 m³</strong>
+            </div>
+          </div>
+
+          <!-- Institutional Action Box: SCARICA, CONDIVIDI, STAMPA -->
+          <div class="p-3.5 sm:p-4 rounded-2xl bg-[#0e1424] border border-white/[0.08] grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <button id="btn-modal-download-pdf" class="btn-primary py-3 px-3 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/25 border border-cyan-300/40 cursor-pointer transition-transform active:scale-[0.98]">
+              <span class="text-base sm:text-lg">📥</span>
+              <span>Scarica PDF</span>
+            </button>
+            <button id="btn-modal-share-pdf" class="py-3 px-3 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white border border-emerald-400/40 transition-all cursor-pointer active:scale-[0.98]">
+              <span class="text-base sm:text-lg">📲</span>
+              <span>Condividi</span>
+            </button>
+            <button id="btn-modal-print-trigger" class="py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 border border-white/[0.1] transition-all cursor-pointer active:scale-[0.98]">
+              <span class="text-base sm:text-lg">🖨️</span>
+              <span>Stampa A4</span>
+            </button>
+          </div>
+
+          <!-- Visual Toggle for Document Sheet Preview -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span>📄</span>
+                <span>Anteprima Foglio Ufficiale A4 (Certificato ARERA)</span>
+              </h4>
+              <span class="text-[10px] font-mono text-slate-400">Zoom Calibrato: 95%</span>
+            </div>
+
+            <!-- Scrollable Document Preview Body -->
+            <div class="p-3 sm:p-5 rounded-2xl bg-white text-slate-900 shadow-2xl border border-slate-300 font-sans" id="modal-report-body">
+              <!-- Live synchronized view of the report -->
+            </div>
+          </div>
+
+          <!-- Institutional Footer Note -->
+          <div class="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] text-[11px] text-slate-400 flex items-center justify-between">
+            <span>Certificato di conformità contabile ARERA e L. 96/2017</span>
+            <span class="font-semibold text-slate-300">HydroSplit Pro © Gennaro Turco</span>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- STRICT PRINT / PDF MODE CONTAINER (A4 SINGLE-PAGE)      -->
+    <!-- Visible ONLY when window.print() is called               -->
+    <!-- ======================================================== -->
+    <div id="print-sheet" class="print-only">
+      
+      <!-- PAGE 1: PROSPETTO DI RIPARTIZIONE PRINCIPALE (STRICT SINGLE A4 PAGE) -->
+      <div class="print-page print-page-1">
+        
+        <!-- PRINT HEADER -->
+      <div class="print-header">
+        <div class="print-title-row">
+          <div>
+            <h1 class="print-doc-title">PROSPETTO DI RIPARTIZIONE CONTATORI IDRICI</h1>
+            <div class="print-doc-subtitle">Rendiconto Analitico di Spesa Idrica Integrata Condominiale</div>
+          </div>
+          <div class="print-fiscal-badge">
+            <div class="print-app-name">HydroSplit Pro</div>
+            <div class="print-doc-num" id="print-doc-date">Data: --/--/----</div>
+          </div>
+        </div>
+
+        <div class="print-meta-grid">
+          <div class="print-meta-col">
+            <span class="print-label">CONDOMINIO:</span>
+            <span class="print-value" id="print-meta-condominio">-</span>
+          </div>
+          <div class="print-meta-col">
+            <span class="print-label">PERIODO DI FATTURAZIONE:</span>
+            <span class="print-value" id="print-meta-periodo">-</span>
+          </div>
+          <div class="print-meta-col">
+            <span class="print-label">RIFERIMENTO FATTURA ENTE:</span>
+            <span class="print-value" id="print-meta-fattura">-</span>
+          </div>
+          <div class="print-meta-col">
+            <span class="print-label">REDATTORE / REFERENTE:</span>
+            <span class="print-value" id="print-meta-amministratore">Gennaro Turco</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. ESTRATTO DELLA BOLLETTA DELL'ENTE GESTORE (TUTTI I CAMPI ANALITICI SENZA ACCORPAMENTI - 6x2 SIMMETRICO) -->
+      <div class="print-bill-excerpt">
+        <div class="print-bill-excerpt-header">
+          <span class="print-bill-excerpt-title">ESTRATTO DELLA BOLLETTA DELL'ENTE GESTORE (Trasparenza Contabile - Campi Analitici)</span>
+          <span class="print-bill-excerpt-meta" id="print-estratto-meta">Fattura Ente Gestore</span>
+        </div>
+        <div class="print-bill-excerpt-grid">
+          <!-- Riga 1: Q. Fissa Acquedotto | Consumi Acquedotto | IVA 10% di Legge -->
+          <div class="print-bill-excerpt-item">
+            <span class="print-bill-excerpt-label">1. Q. Fissa Acquedotto:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-fissa-base">€ 0,00</strong>
+          </div>
+          <div class="print-bill-excerpt-item">
+            <span class="print-bill-excerpt-label">5. Consumi Acquedotto:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-var-acqua">€ 0,00</strong>
+          </div>
+          <div class="print-bill-excerpt-item">
+            <span class="print-bill-excerpt-label">9. IVA 10% di Legge:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-iva-legge">€ 0,00</strong>
+          </div>
+
+          <!-- Riga 2: Spese Spedizione | Quota Fognatura | Totale Fattura Gestore -->
+          <div class="print-bill-excerpt-item">
+            <span class="print-bill-excerpt-label">2. Spese Spedizione / Invio:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-spedizione">€ 0,00</strong>
+          </div>
+          <div class="print-bill-excerpt-item">
+            <span class="print-bill-excerpt-label">6. Canone Fognatura:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-var-fognatura">€ 0,00</strong>
+          </div>
+          <div class="print-bill-excerpt-item print-bill-excerpt-highlight">
+            <span class="print-bill-excerpt-label">10. Totale Fattura Ente:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-totale-fattura">€ 0,00</strong>
+          </div>
+
+          <!-- Riga 3: Oneri Pereq. Acqua | Quota Depurazione | Costo Bollettino -->
+          <div class="print-bill-excerpt-item">
+            <span class="print-bill-excerpt-label">3. Oneri Pereq. Acqua:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-oneri-acqua">€ 0,00</strong>
+          </div>
+          <div class="print-bill-excerpt-item">
+            <span class="print-bill-excerpt-label">7. Canone Depurazione:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-var-depurazione">€ 0,00</strong>
+          </div>
+          <div class="print-bill-excerpt-item print-bill-excerpt-bollettino">
+            <span class="print-bill-excerpt-label">11. Costo Bollettino:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-costo-bollettino">€ 0,00</strong>
+          </div>
+
+          <!-- Riga 4: Oneri Pereq. Fognatura | Oneri Pereq. Depur. | Totale da Ripartire -->
+          <div class="print-bill-excerpt-item">
+            <span class="print-bill-excerpt-label">4. Oneri Pereq. Fognatura:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-oneri-fognatura">€ 0,00</strong>
+          </div>
+          <div class="print-bill-excerpt-item">
+            <span class="print-bill-excerpt-label">8. Oneri Pereq. Depurazione:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-oneri-depurazione">€ 0,00</strong>
+          </div>
+          <div class="print-bill-excerpt-item print-bill-excerpt-total">
+            <span class="print-bill-excerpt-label">12. Totale da Ripartire:</span>
+            <strong class="print-bill-excerpt-val" id="print-estratto-totale-complessivo">€ 0,00</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. QUADRI DI LAVORAZIONE E RIPARTIZIONE SPESE -->
+      <div class="print-macro-grid">
+        
+        <!-- PANEL A: SPESE FISSE COMUNI (Divise in Parti Uguali) -->
+        <div class="print-panel">
+          <div class="print-panel-title">1. QUADRO SPESE FISSE COMUNI (Divise in Parti Uguali)</div>
+          <table class="print-subtable">
+            <tbody>
+              <tr>
+                <td>Totale Quota Fissa da Bolletta (con postalizzazione inclusa):</td>
+                <td class="text-right font-mono" id="print-fissi-quota">€ 0,00</td>
+              </tr>
+              <tr>
+                <td>Oneri Perequativi di Sistema (UI1, UI2, UI3, UI4):</td>
+                <td class="text-right font-mono" id="print-fissi-oneri">€ 0,00</td>
+              </tr>
+              <tr>
+                <td>IVA 10% sui fissi imponibili della bolletta:</td>
+                <td class="text-right font-mono" id="print-fissi-iva">€ 0,00</td>
+              </tr>
+              <tr class="print-subtable-bollettino">
+                <td><strong>Costo Pagamento Bollettino (Spesa di versamento):</strong></td>
+                <td class="text-right font-mono"><strong id="print-fissi-costo-bollettino">€ 0,00</strong></td>
+              </tr>
+              <tr class="print-subtable-total">
+                <td><strong>Totale Spese Fisse Comuni Finite:</strong></td>
+                <td class="text-right font-mono"><strong id="print-fissi-totale">€ 0,00</strong></td>
+              </tr>
+              <tr class="print-subtable-highlight">
+                <td>Quota Pro-Capite (<span id="print-units-count">3</span> unità - addolcita per eccesso ai 10c):</td>
+                <td class="text-right font-mono"><strong id="print-fissi-unitaria">€ 0,00</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- PANEL B: SPESE VARIABILI (Proporzionali ai Consumi) -->
+        <div class="print-panel">
+          <div class="print-panel-title">2. QUADRO SPESE VARIABILI (Proporzionali ai Consumi)</div>
+          <table class="print-subtable">
+            <tbody>
+              <tr>
+                <td>Canoni Idrici Acquedotto (Imponibile):</td>
+                <td class="text-right font-mono" id="print-var-idrici">€ 0,00</td>
+              </tr>
+              <tr>
+                <td>Canone Fognatura (Imponibile):</td>
+                <td class="text-right font-mono" id="print-var-fognatura">€ 0,00</td>
+              </tr>
+              <tr>
+                <td>Canone Depurazione Reflui (Imponibile):</td>
+                <td class="text-right font-mono" id="print-var-depurazione">€ 0,00</td>
+              </tr>
+              <tr>
+                <td>IVA 10% sui canoni volumetrici:</td>
+                <td class="text-right font-mono" id="print-var-iva">€ 0,00</td>
+              </tr>
+              <tr class="print-subtable-total">
+                <td><strong>Totale Spese Variabili Finite:</strong></td>
+                <td class="text-right font-mono"><strong id="print-var-totale">€ 0,00</strong></td>
+              </tr>
+              <tr class="print-subtable-highlight">
+                <td>Volume Totale Rilevato / Costo Medio Netto:</td>
+                <td class="text-right font-mono"><strong id="print-var-costo-m3">0 m³ (€ 0,00/m³)</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- MASTER RECONCILIATION SUMMARY BAR -->
+      <div class="print-recon-bar">
+        <div><strong>Totale Fattura Gestore:</strong> <span id="print-recon-bolletta" class="font-mono">€ 0,00</span></div>
+        <div><strong>Totale Spese Ripartite:</strong> <span id="print-recon-ripartito" class="font-mono">€ 0,00</span></div>
+        <div><strong>Scarto di Quadratura:</strong> <span id="print-recon-delta" class="font-mono">0,00 € (Esatto)</span></div>
+      </div>
+
+      <!-- 3. PRINT SUMMARY TABLE -->
+      <div class="print-section-title">3. QUADRO GENERALE DI RIPARTIZIONE & LIQUIDAZIONE DEI CONDÒMINI</div>
+      <div class="print-table-wrapper">
+        <table class="print-main-table">
+          <thead>
+            <tr>
+              <th>Inquilino / Destinatario</th>
+              <th class="text-right">Lett. Prec.</th>
+              <th class="text-right">Lett. Att.</th>
+              <th class="text-right">Consumo</th>
+              <th class="text-right">Quota %</th>
+              <th class="text-right">Q. Fissa</th>
+              <th class="text-right">Q. Variabile</th>
+              <th class="text-right">Importo Esatto</th>
+              <th class="text-right">DA SALDARE (arr. 10c)</th>
+            </tr>
+          </thead>
+          <tbody id="print-table-body">
+            <!-- Dynamically populated -->
+          </tbody>
+          <tfoot id="print-table-foot">
+            <!-- Dynamically populated -->
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- LEGAL CLAUSE & DOCUMENT CREATOR (PAGINA 1 - NO FIRMA) -->
+      <div class="print-footer">
+        <div class="print-legal-note">
+          <strong>NOTA FISCALE & GESTIONE MONETE (L. 96/2017):</strong> Ripartizione calcolata con algoritmo HydroSplit Pro conforme alle direttive ARERA per sub-contatori idrici. 
+          Ai sensi dell'art. 13-quater L. 96/2017 (cessazione circolazione monete 1 e 2 centesimi) e vista la scarsa reperibilità delle monete da 5 centesimi, le quote individuali da saldare sono <strong>arrotondate per eccesso ai 10 centesimi</strong> per facilitare i pagamenti. L'eccedenza totale (<span id="print-fondo-cassa-note">+€ 0,00</span>) confluisce automaticamente nel <strong>Fondo Cassa Spese Idriche Condominiali</strong> a conguaglio della bolletta successiva.
+        </div>
+        <div class="print-author-bar">
+          <div>Documento creato da: <strong id="print-doc-author-name">Gennaro Turco</strong> il <span id="print-doc-author-date">--/--/----</span></div>
+          <div class="text-[5.5pt] text-slate-500">Certificato ARERA • Nessuna firma richiesta</div>
+        </div>
+      </div>
+      </div> <!-- END PRINT-PAGE-1 -->
+
+      <!-- ======================================================== -->
+      <!-- DEDICATED PAGE 2: DOCUMENTAZIONE FOTOGRAFICA CONTATORI   -->
+      <!-- Strictly 3x3 cm photo + side descriptive briefing card   -->
+      <!-- ======================================================== -->
+      <div id="print-photo-annex" class="print-page print-page-2">
+        <div class="print-photo-header">
+          <div>
+            <div class="print-photo-title">FASCICOLO ALLEGATO: DOCUMENTAZIONE FOTOGRAFICA CONTATORI</div>
+            <div class="print-photo-subtitle">Documentazione visiva e scheda analitica per singola unità (Conforme ARERA)</div>
+          </div>
+          <div class="text-right text-[6.5pt] font-mono text-slate-500">
+            <div>Allegato Obbligatorio • ARERA</div>
+            <div>Pagina 2 di 2</div>
+          </div>
+        </div>
+
+        <div id="print-photo-cards-list" class="print-photo-list">
+          <!-- Populated dynamically with high-visibility photo and elongated side descriptive card -->
+        </div>
+
+        <!-- QUADRO NORMATIVO & CRITERI DI ASSEVERAZIONE SUB-CONTATORI (Riempimento armonico ed elegante A4) -->
+        <div class="print-audit-box">
+          <div class="print-audit-title">CRITERI DI CONFORMITÀ TECNICA, METROLOGIA & BILANCIO IDRICO (ARERA)</div>
+          <div class="print-audit-grid">
+            <div class="print-audit-col">
+              <span class="print-audit-heading">1. Conformità MID & Riconoscimento Visivo</span>
+              <p>I sub-contatori divisionali individuali sono conformi alla direttiva metrologica europea MID (2014/32/UE). La documentazione fotografica assevera lo stato effettivo della numerazione metrica rilevata alla data di chiusura del periodo contabile.</p>
+            </div>
+            <div class="print-audit-col">
+              <span class="print-audit-heading">2. Bilancio Idrico & Assenza Perdite Occulte</span>
+              <p>La sommatoria dei volumi individuali misurati (m³) garantisce la perfetta quadratura volumetrica con il contatore generale dell'Ente Gestore, certificando l'integrità della rete interna dell'edificio e l'assenza di dispersioni occulte a monte.</p>
+            </div>
+            <div class="print-audit-col">
+              <span class="print-audit-heading">3. Arrotondamento ai 10c & Fondo Cassa</span>
+              <p>Le quote spettanti sono state regolate per eccesso ai 10 centesimi (art. 13-quater Legge 96/2017). L'eccedenza contabile generata costituisce credito condominiale ed è interamente riversata nel Fondo Cassa Spese Idriche a conguaglio.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="print-footer mt-2">
+          <div class="print-legal-note">
+            Fascicolo fotografico e asseverazione metrica per sub-contatori idrici condominiali (ARERA). Le fotografie sopra riportate asseverano le letture volumetriche (m³) rilevate sui singoli sub-contatori idrici privati. I valori e le somme da saldare corrispondono fedelmente al prospetto contabile della pagina 1 con arrotondamento ai 10 centesimi (art. 13-quater L. 96/2017).
+          </div>
+          <div class="print-author-bar">
+            <div>Documento creato da: <strong id="print-doc-author-name-p2">Gennaro Turco</strong> il <span id="print-doc-author-date-p2">--/--/----</span></div>
+            <div class="text-[5.5pt] text-slate-500">Rilevazione fotografica asseverata • Nessuna firma richiesta</div>
+          </div>
+        </div>
+      </div> <!-- END PRINT-PAGE-2 -->
+
+    </div>
+
+    <!-- PHOTO LIGHTBOX MODAL (HIGH RESOLUTION INSPECTION) -->
+    <div id="photo-lightbox-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 opacity-0 pointer-events-none transition-all duration-300" role="dialog" aria-modal="true">
+      <div id="lightbox-backdrop" class="absolute inset-0 bg-[#05070e]/90 backdrop-blur-xl"></div>
+      <div class="relative z-10 max-w-lg w-full rounded-3xl bg-[#0a0e1a] border border-white/10 shadow-2xl p-4 sm:p-5 space-y-3.5 transform scale-95 transition-transform duration-300" id="lightbox-content">
+        <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-cyan-950/80 border border-cyan-400/40 text-cyan-300 flex items-center justify-center text-sm">
+              📸
+            </div>
+            <div>
+              <h4 id="lightbox-tenant-name" class="text-xs sm:text-sm font-bold text-white">Foto Lettura Contatore</h4>
+              <span id="lightbox-meter-reading" class="text-[10px] font-mono text-cyan-400">Lettura: -- m³</span>
+            </div>
+          </div>
+          <button id="lightbox-close-btn" class="p-1.5 rounded-xl bg-white/[0.05] text-slate-400 hover:text-white hover:bg-white/[0.1] transition-colors" title="Chiudi">
+            ✕
+          </button>
+        </div>
+
+        <div class="rounded-2xl overflow-hidden bg-black/80 border border-white/[0.08] flex items-center justify-center p-2 min-h-[220px] max-h-[62vh]">
+          <img id="lightbox-image" src="" alt="Foto Contatore" class="max-h-[58vh] max-w-full w-auto object-contain rounded-xl shadow-lg" />
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+          <span class="flex items-center gap-1 text-[10px] text-slate-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            Prova fotografica certificata nel prospetto A4
+          </span>
+          <button id="lightbox-remove-btn" class="text-xs text-rose-400 hover:text-rose-300 px-2.5 py-1 rounded-lg hover:bg-rose-500/10 transition-colors">
+            🗑️ Elimina foto
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- INTERACTIVE SQUARE CROPPER MODAL (1:1 RATIO)             -->
+    <!-- Allows user to pan, zoom, and center the meter digits    -->
+    <!-- ======================================================== -->
+    <div id="crop-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 opacity-0 pointer-events-none transition-all duration-300" role="dialog" aria-modal="true">
+      <div id="crop-modal-backdrop" class="absolute inset-0 bg-[#05070e]/90 backdrop-blur-xl"></div>
+      
+      <div class="relative z-10 max-w-sm w-full rounded-3xl bg-[#0a0e1a] border border-white/10 shadow-2xl p-4 sm:p-5 space-y-3.5 transform scale-95 transition-transform duration-300" id="crop-modal-content">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-cyan-950/80 border border-cyan-400/40 text-cyan-300 flex items-center justify-center text-sm">
+              ✂️
+            </div>
+            <div>
+              <h4 class="text-xs sm:text-sm font-bold text-white">Inquadra Contatore</h4>
+              <span id="crop-tenant-name" class="text-[10px] font-mono text-cyan-400">Ritaglio quadrato 1:1</span>
+            </div>
+          </div>
+          <button id="crop-modal-close" class="p-1.5 rounded-xl bg-white/[0.05] text-slate-400 hover:text-white hover:bg-white/[0.1] transition-colors" title="Chiudi">
+            ✕
+          </button>
+        </div>
+
+        <p class="text-[11px] text-slate-400 leading-tight">
+          Trascina per centrare la lettura e regola lo zoom. L'immagine verrà salvata in formato <strong>quadrato perfetto</strong> senza distorsioni.
+        </p>
+
+        <!-- Square Viewport Box (Interactive canvas / draggable container) -->
+        <div class="relative w-full aspect-square max-w-[280px] mx-auto rounded-2xl overflow-hidden bg-black border-2 border-cyan-400 shadow-xl touch-none select-none flex items-center justify-center cursor-grab active:cursor-grabbing" id="crop-viewport">
+          <canvas id="crop-canvas" class="w-full h-full block" width="560" height="560"></canvas>
+          
+          <!-- Viewport grid overlay (rule of thirds guide) -->
+          <div class="absolute inset-0 pointer-events-none border border-cyan-400/30 grid grid-cols-3 grid-rows-3">
+            <div class="border-r border-b border-white/10"></div>
+            <div class="border-r border-b border-white/10"></div>
+            <div class="border-b border-white/10"></div>
+            <div class="border-r border-b border-white/10"></div>
+            <div class="border-r border-b border-white/10"></div>
+            <div class="border-b border-white/10"></div>
+            <div class="border-r border-b border-white/10"></div>
+            <div class="border-r border-b border-white/10"></div>
+            <div></div>
+          </div>
+
+          <!-- Center Crosshair Circle Indicator -->
+          <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div class="w-8 h-8 rounded-full border border-cyan-400/40"></div>
+          </div>
+        </div>
+
+        <!-- Zoom Slider and Controls -->
+        <div class="space-y-1.5 bg-white/[0.02] p-2.5 rounded-2xl border border-white/[0.06]">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-400 flex items-center gap-1 font-medium text-[10px]">
+              <span>🔍 Ingrandimento:</span>
+            </span>
+            <span id="crop-zoom-label" class="font-mono text-cyan-300 font-bold text-[10px]">1.0x</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="crop-zoom-out" class="w-7 h-7 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white flex items-center justify-center text-sm font-bold">
+              -
+            </button>
+            <input type="range" id="crop-zoom-slider" min="1" max="3" step="0.05" value="1" class="flex-1 accent-cyan-400 cursor-pointer h-1.5 bg-slate-700 rounded-lg" />
+            <button type="button" id="crop-zoom-in" class="w-7 h-7 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white flex items-center justify-center text-sm font-bold">
+              +
+            </button>
+            <button type="button" id="crop-btn-rotate" class="px-2 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-[10px] text-slate-300 font-mono transition-colors" title="Ruota 90° orario">
+              🔄 90°
+            </button>
+            <button type="button" id="crop-btn-reset" class="px-2 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-[10px] text-slate-300 font-mono transition-colors" title="Ripristina centro">
+              ↺ Centra
+            </button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-2 pt-1 border-t border-white/[0.08]">
+          <button type="button" id="crop-btn-cancel" class="btn-ghost text-xs px-3.5 py-2 rounded-xl text-slate-300 hover:text-white">
+            Annulla
+          </button>
+          <button type="button" id="crop-btn-confirm" class="btn-primary text-xs px-4 py-2 rounded-xl font-black flex items-center gap-1.5 shadow-lg shadow-cyan-500/25">
+            <span>✓ Salva Quadrato 1:1</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MODAL: CENTRO CONDIVISIONE & EXPORT MULTI-CANALE -->
+    <div id="share-hub-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 opacity-0 pointer-events-none transition-all duration-300" role="dialog" aria-modal="true">
+      <div id="share-hub-backdrop" class="absolute inset-0 bg-[#05070e]/85 backdrop-blur-xl"></div>
+      <div class="relative z-10 max-w-md w-full rounded-3xl bg-[#0a0e1a] border border-white/10 shadow-2xl p-5 sm:p-6 space-y-4 transform scale-95 transition-transform duration-300" id="share-hub-content">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-center text-xl flex-shrink-0 shadow-lg shadow-emerald-500/10">
+              📲
+            </div>
+            <div>
+              <h4 class="text-sm sm:text-base font-bold text-white">Condividi Prospetto Idrico</h4>
+              <p class="text-[11px] text-slate-400">Scegli come inviare o archiviare il documento</p>
+            </div>
+          </div>
+          <button id="share-hub-close" class="p-1.5 rounded-xl bg-white/[0.05] text-slate-400 hover:text-white hover:bg-white/[0.1] transition-colors" title="Chiudi">
+            ✕
+          </button>
+        </div>
+
+        <!-- Share Options Grid -->
+        <div class="space-y-2.5 pt-1">
+          
+          <!-- Option 1: Native System Share (Android / iOS / Mac) -->
+          <button id="btn-share-native" class="w-full p-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white flex items-center justify-between gap-3 text-left transition-all shadow-lg shadow-emerald-950/40 border border-emerald-400/30 cursor-pointer group active:scale-[0.98]">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-2xl p-2 rounded-xl bg-white/10 group-hover:scale-110 transition-transform">📱</span>
+              <div class="min-w-0">
+                <span class="text-xs sm:text-sm font-bold block truncate">Condivisione con App del Dispositivo</span>
+                <span class="text-[10px] text-emerald-100/80 block truncate">WhatsApp, Mail, AirDrop, Telegram, Salva su File</span>
+              </div>
+            </div>
+            <span class="text-emerald-200 text-sm">➔</span>
+          </button>
+
+          <!-- Option 2: WhatsApp Direct Message -->
+          <button id="btn-share-whatsapp" class="w-full p-3.5 rounded-2xl bg-[#0e1726] hover:bg-[#132034] text-white flex items-center justify-between gap-3 text-left transition-all border border-emerald-500/30 cursor-pointer group active:scale-[0.98]">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-2xl p-2 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">💬</span>
+              <div class="min-w-0">
+                <span class="text-xs sm:text-sm font-bold block truncate text-emerald-300">WhatsApp: Invia Riepilogo ai Condòmini</span>
+                <span class="text-[10px] text-slate-400 block truncate">Apre WhatsApp Web / App con il prospetto formattato</span>
+              </div>
+            </div>
+            <span class="text-slate-400 text-sm">➔</span>
+          </button>
+
+          <!-- Option 3: Email / PEC -->
+          <button id="btn-share-email" class="w-full p-3.5 rounded-2xl bg-[#0e1726] hover:bg-[#132034] text-white flex items-center justify-between gap-3 text-left transition-all border border-cyan-500/30 cursor-pointer group active:scale-[0.98]">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-2xl p-2 rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:scale-110 transition-transform">✉️</span>
+              <div class="min-w-0">
+                <span class="text-xs sm:text-sm font-bold block truncate text-cyan-300">Email: Invia con Client di Posta</span>
+                <span class="text-[10px] text-slate-400 block truncate">Genera messaggio email precompilato con oggetto e dati</span>
+              </div>
+            </div>
+            <span class="text-slate-400 text-sm">➔</span>
+          </button>
+
+          <!-- Option 4: Direct Download PDF -->
+          <button id="btn-share-download" class="w-full p-3.5 rounded-2xl bg-[#0e1726] hover:bg-[#132034] text-white flex items-center justify-between gap-3 text-left transition-all border border-white/[0.08] cursor-pointer group active:scale-[0.98]">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-2xl p-2 rounded-xl bg-white/[0.05] text-cyan-300 group-hover:scale-110 transition-transform">📥</span>
+              <div class="min-w-0">
+                <span class="text-xs sm:text-sm font-bold block truncate">Scarica File PDF sul Dispositivo</span>
+                <span class="text-[10px] text-slate-400 block truncate">Salva il documento PDF ufficiale A4 nei tuoi file</span>
+              </div>
+            </div>
+            <span class="text-slate-400 text-sm">➔</span>
+          </button>
+
+          <!-- Option 5: Copy text to clipboard -->
+          <button id="btn-share-copy" class="w-full p-3 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] text-slate-300 flex items-center justify-between gap-3 text-left transition-all border border-white/[0.06] cursor-pointer group">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-xl p-1.5 rounded-lg bg-white/[0.05] text-slate-300">📋</span>
+              <div class="min-w-0">
+                <span class="text-xs font-semibold block truncate">Copia Testo per Bacheca / Chat</span>
+                <span class="text-[10px] text-slate-400 block truncate">Copia la tabella riassuntiva negli appunti</span>
+              </div>
+            </div>
+            <span class="text-xs text-slate-400">Copia</span>
+          </button>
+
+          <!-- Option 6: Print -->
+          <button id="btn-share-print" class="w-full p-3 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] text-slate-300 flex items-center justify-between gap-3 text-left transition-all border border-white/[0.06] cursor-pointer group">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-xl p-1.5 rounded-lg bg-white/[0.05] text-slate-300">🖨️</span>
+              <div class="min-w-0">
+                <span class="text-xs font-semibold block truncate">Stampa Documento Cartaceo (A4)</span>
+                <span class="text-[10px] text-slate-400 block truncate">Invia alla stampante o salva con driver di stampa</span>
+              </div>
+            </div>
+            <span class="text-xs text-slate-400">Stampa</span>
+          </button>
+
+        </div>
+
+        <div class="pt-2 text-center">
+          <p class="text-[10px] text-slate-500">HydroSplit Pro • Esportazione e Condivisione Certificata</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CUSTOM STYLED MODAL SYSTEM (MagicModal) -->
+    <div id="magic-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300" role="dialog" aria-modal="true" aria-hidden="true">
+      <div id="magic-modal-backdrop" class="absolute inset-0 bg-[#05070e]/85 backdrop-blur-xl"></div>
+      <div class="relative z-10 max-w-sm w-full p-6 rounded-3xl bg-[#0a0e1a] border border-white/10 shadow-2xl space-y-4 transform scale-95 transition-transform duration-300" id="magic-modal-content">
+        <div class="flex items-center gap-3">
+          <div id="magic-modal-icon" class="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold bg-cyan-950 text-cyan-400 border border-cyan-800/60 flex-shrink-0">
+            ℹ️
+          </div>
+          <div>
+            <h4 id="magic-modal-title" class="text-sm font-bold text-white">Notifica</h4>
+            <span id="magic-modal-subtitle" class="text-[11px] font-mono text-slate-400">HydroSplit Pro</span>
+          </div>
+        </div>
+
+        <p id="magic-modal-message" class="text-xs text-slate-300 leading-relaxed">
+          Messaggio...
+        </p>
+
+        <div id="magic-modal-actions" class="pt-2 flex items-center justify-end gap-2 border-t border-white/[0.08]">
+          <button id="magic-modal-cancel" class="btn-ghost text-xs px-3.5 py-2 rounded-xl text-slate-300">
+            Annulla
+          </button>
+          <button id="magic-modal-confirm" class="btn-primary text-xs px-4 py-2 rounded-xl font-bold">
+            Conferma
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
